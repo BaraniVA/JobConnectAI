@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   safetyContainer: {
     marginTop: 20,
     padding: 15,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
     borderRadius: 8,
   },
   safetyTitle: {

@@ -46,9 +46,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
-    eas: {
-      projectId: 'your-project-id'
-    }
   },
   plugins: ['expo-router']
 });
