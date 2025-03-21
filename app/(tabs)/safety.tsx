@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, Image, ActivityIndi
 import * as Speech from 'expo-speech';
 import { useSafetyTips, useRights } from '@/hooks/useFirestore';
 
+
 export default function SafetyScreen() {
   const [activeTab, setActiveTab] = useState('safety');
   const { tips, loading: tipsLoading, error: tipsError } = useSafetyTips();

@@ -5,7 +5,10 @@ import { Mic, Shield } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import { useJobs } from '@/hooks/useFirestore';
-import { enhanceVoiceSearch, processSearchQuery, searchJobs } from '../../utils/geminiService';
+import { processSearchQuery, searchJobs } from '../../utils/geminiService';
+import { styles } from '../styles/searchStyles';
+import Constants from 'expo-constants';
+const apiKey = Constants.expoConfig?.extra?.GOOGLE_CLOUD_API_KEY;
 
 export default function SearchScreen() {
   // Keep existing state
@@ -64,9 +67,31 @@ export default function SearchScreen() {
       });
       
       // Create and start new recording
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      const { recording } = await Audio.Recording.createAsync({
+        android: {
+          extension: '.wav',
+          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+          audioEncoder: Audio.AndroidAudioEncoder.AAC,
+          sampleRate: 48000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        ios: {
+          extension: '.wav',
+          outputFormat: Audio.IOSOutputFormat.LINEARPCM,
+          audioQuality: Audio.IOSAudioQuality.HIGH,
+          sampleRate: 48000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+        web: {
+          mimeType: 'audio/webm',
+          bitsPerSecond: 128000,
+        },
+      });
       
       setRecording(recording);
       setIsListening(true);
@@ -127,19 +152,70 @@ export default function SearchScreen() {
     try {
       setIsProcessing(true);
       
-      // Simulate a short delay for "processing"
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get the audio file content
+      const response = await fetch(audioUri);
+      const blob = await response.blob();
       
-      // Demo phrases - in a real app, this would be the result from the speech recognition service
-      const demoQueries = [
-        "Farming",
-        "Picking",
-        "Constuctions"
-      ];
+      // Convert to base64
+      const reader = new FileReader();
+      const audioBase64Promise = new Promise<string>((resolve) => {
+        reader.onloadend = () => {
+          
+          const base64 = reader.result?.toString().split(',')[1] || '';
+          resolve(base64);
+        };
+      });
+      reader.readAsDataURL(blob);
+      const audioBase64 = await audioBase64Promise;
       
-      // Pick a random phrase for demonstration
-      const transcribedText = demoQueries[Math.floor(Math.random() * demoQueries.length)];
-      console.log('Simulated transcription:', transcribedText);
+      // Access the API key
+      if (!apiKey) {
+        console.error('Google Cloud API Key not found');
+        throw new Error('API Key not configured');
+      }
+      
+      // Call Google Cloud Speech-to-Text API
+      const speechResponse = await fetch(
+        `https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            config: {
+              encoding: 'WEBM_OPUS',
+              sampleRateHertz: 48000,
+              languageCode: 'en-US',
+              model: 'default',
+              audioChannelCount: 1,
+              enableAutomaticPunctuation: true,
+              useEnhanced: true,
+            },
+            audio: {
+              content: audioBase64,
+            },
+          }),
+        }
+      );
+      
+      const speechData = await speechResponse.json();
+      console.log('Google Speech API response:', speechData);
+      
+      let transcribedText = '';
+      
+      if (
+        speechData.results && 
+        speechData.results.length > 0 && 
+        speechData.results[0].alternatives && 
+        speechData.results[0].alternatives.length > 0
+      ) {
+        transcribedText = speechData.results[0].alternatives[0].transcript;
+        console.log('Transcription result:', transcribedText);
+      } else {
+        console.warn('No transcription found in the response');
+        transcribedText = "Sorry, I couldn't understand that";
+      }
       
       // Process with Gemini
       processVoiceInput(transcribedText);
@@ -147,37 +223,6 @@ export default function SearchScreen() {
     } catch (error) {
       console.error('Error in speech recognition:', error);
       setVoiceError('Could not recognize speech');
-      setIsProcessing(false);
-    }
-  };
-
-  // Voice search handler (toggle recording)
-  const handleVoiceSearch = async () => {
-    if (isListening) {
-      await stopRecording();
-    } else {
-      await startRecording();
-    }
-  };
-
-  // Process voice input with Gemini (keep your existing function)
-  const processVoiceInput = async (transcribedText: string) => {
-    try {
-      setIsProcessing(true);
-      
-      // Process with Gemini for better understanding
-      const enhancedText = await enhanceVoiceSearch(transcribedText);
-      setSearchQuery(enhancedText);
-      
-      // Provide audio feedback
-      Speech.speak('Searching for ' + enhancedText, { rate: 0.9 });
-      
-      // Perform the search with enhanced text
-      await handleAISearch(enhancedText);
-    } catch (error) {
-      console.error('Error processing voice input:', error);
-      Speech.speak('Sorry, I had trouble processing your search', { rate: 0.9 });
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -218,26 +263,80 @@ export default function SearchScreen() {
     }
   };
 
-  // Render job item - complete implementation
-  const renderJob = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.jobCard}
-      onPress={() => router.push(`/job/${item.id}`)}
-    >
-      <View style={styles.jobHeader}>
-        <Text style={styles.jobTitle}>{item.title || "Job Position"}</Text>
-        <Text style={styles.jobCompany}>{item.company || "Company Name"}</Text>
-      </View>
-      <Text style={styles.jobLocation}>{item.location || "Location"}</Text>
-      <Text style={styles.jobPay}>{item.salary || item.pay || "$15-20/hr"}</Text>
-      {item.safetyScore && (
-        <View style={styles.safetyBadge}>
-          <Shield size={16} color="#4CAF50" />
-          <Text style={styles.safetyText}>Safety Score: {item.safetyScore}</Text>
+  // Process voice input after speech recognition
+  const processVoiceInput = (text: string) => {
+    try {
+      // Update the search query display
+      setSearchQuery(text);
+      
+      // If we got a valid transcription
+      if (text && text !== "Sorry, I couldn't understand that") {
+        // Use our AI-powered search
+        handleAISearch(text);
+      } else {
+        setVoiceError('Could not understand speech clearly. Please try again.');
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error('Error processing voice input:', error);
+      setVoiceError('Error processing your request');
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle voice search button press
+  const handleVoiceSearch = () => {
+    if (isListening) {
+      // If already listening, stop recording
+      stopRecording();
+    } else {
+      // Start a new recording
+      startRecording();
+    }
+  };
+
+  // Render job item with dynamic safety score colors
+  const renderJob = ({ item }: { item: any }) => {
+    // Determine safety level based on score value
+    let safetyBadgeStyle = styles.safetyBadgeLow;
+    let safetyTextStyle = styles.safetyTextLow;
+    let safetyColor = "#4CAF50"; // Green (default/safe)
+    
+    if (item.safetyScore) {
+      const score = parseFloat(item.safetyScore);
+      
+      if (score >= 7) {
+        // High risk (red)
+        safetyBadgeStyle = styles.safetyBadgeHigh;
+        safetyTextStyle = styles.safetyTextHigh;
+        safetyColor = "#F44336";
+      } else if (score >= 4) {
+        // Medium risk (orange)
+        safetyBadgeStyle = styles.safetyBadgeMedium;
+        safetyTextStyle = styles.safetyTextMedium;
+        safetyColor = "#FF9800";
+      }
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.jobCard}
+        onPress={() => router.push(`/job/${item.id}`)}
+      >
+        <View style={styles.jobHeader}>
+          <Text style={styles.jobTitle}>{item.title || "Job Position"}</Text>
         </View>
-      )}
-    </TouchableOpacity>
-  );
+        <Text style={styles.jobLocation}>{item.location || "Location"}</Text>
+        <Text style={styles.jobPay}>{item.salary || item.pay || "$15-20/hr"}</Text>
+        {item.safetyScore && (
+          <View style={[styles.safetyBadge, safetyBadgeStyle]}>
+            <Shield size={16} color={safetyColor} />
+            <Text style={safetyTextStyle}>Safety Score: {item.safetyScore}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -305,151 +404,3 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  backgroundImage: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    opacity: 0.15,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  voiceSearchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 10,
-    marginTop: 150,
-    marginVertical: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  listening: {
-    backgroundColor: '#FF3B30',
-  },
-  searchButtonText: {
-    fontSize: 18,
-    color: 'white',
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  resultsContainer: {
-    flex: 1,
-    marginTop: 16,
-  },
-  jobsList: {
-    paddingBottom: 20,
-  },
-  jobCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  jobHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  jobTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-  },
-  jobCompany: {
-    fontSize: 16,
-    color: '#666',
-  },
-  jobLocation: {
-    fontSize: 15,
-    color: '#666',
-    marginBottom: 8,
-  },
-  jobPay: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
-    marginBottom: 8,
-  },
-  safetyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  safetyText: {
-    color: '#4CAF50',
-    fontSize: 14,
-    marginLeft: 4,
-  },
-  errorContainer: {
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 14,
-  },
-  queryContainer: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  queryText: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  statusText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#666',
-  },
-  loader: {
-    marginTop: 40,
-  },
-  noResultsText: {
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
-    color: '#666',
-  },
-  instructionsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 40,
-  },
-  instructionsText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-});
