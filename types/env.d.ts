@@ -7,4 +7,5 @@ declare module '@env' {
   export const FIREBASE_APP_ID: string;
   export const GEMINI_API_KEY: string;
   export const EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: string;
+  export const GOOGLE_CLOUD_API_KEY: string;
 }

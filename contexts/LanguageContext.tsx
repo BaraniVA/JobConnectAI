@@ -1,6 +1,16 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Language = 'english' | 'tamil' | 'swahili' | 'telugu' | 'malayalam';
+
+const languageCodes: Record<Language, string> = {
+  english: 'en',
+  tamil: 'ta',
+  swahili: 'sw',
+  telugu: 'te',
+  malayalam: 'ml'
+};
 
 interface LanguageContextType {
   language: Language;
@@ -22,8 +32,48 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
+const translationCache: Record<string, Record<string, string>> = {
+  tamil: {},
+  swahili: {},
+  telugu: {},
+  malayalam: {}
+};
+
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('english');
+
+  useEffect(() => {
+    const loadSavedLanguage = async () => {
+      try {
+        const savedLanguage = await AsyncStorage.getItem('userLanguage');
+        if (savedLanguage && isValidLanguage(savedLanguage)) {
+          setLanguage(savedLanguage as Language);
+        }
+      } catch (error) {
+        console.error('Failed to load language preference:', error);
+      }
+    };
+    
+    loadSavedLanguage();
+  }, []);
+
+  useEffect(() => {
+    const saveLanguage = async () => {
+      try {
+        await AsyncStorage.setItem('userLanguage', language);
+      } catch (error) {
+        console.error('Failed to save language preference:', error);
+      }
+    };
+    
+    saveLanguage();
+  }, [language]);
+  
+  // Helper to validate language type
+  function isValidLanguage(lang: string): boolean {
+    return ['english', 'tamil', 'swahili', 'telugu', 'malayalam'].includes(lang);
+  }
+
 
   const translate = async (text: string): Promise<string> => {
     if (language === 'english') return text;
@@ -62,32 +112,56 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         }
       };
       
-      // Check if we have a quick translation available
       if (quickTranslations[language]?.[text]) {
         return quickTranslations[language][text];
       }
       
-      // For texts not in our predefined list, just return the original
-      console.log(`No translation found for: "${text}" in ${language}`);
-      return text;
+      // Then check cache
+      if (translationCache[language]?.[text]) {
+        return translationCache[language][text];
+      }
       
-      // NOTE: The API approach below won't work in React Native without a proper backend
-      // You would need to set up a real backend server and use its full URL
-      /*
-      const response = await fetch('https://your-actual-backend-url.com/api/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text,
-          targetLanguage: language,
-        }),
-      });
+      // Get API key from Expo Constants (add this to app.json or app.config.js)
+      const TRANSLATE_API_KEY = Constants.expoConfig?.extra?.translateApiKey;
+      
+      if (!TRANSLATE_API_KEY) {
+        console.warn('Translation API key not found');
+        return text;
+      }
+      
+      // Call translation API
+      const targetLang = languageCodes[language];
+      const response = await fetch(
+        `https://translation.googleapis.com/language/translate/v2?key=${TRANSLATE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            q: text,
+            source: 'en',
+            target: targetLang,
+            format: 'text'
+          }),
+        }
+      );
       
       const data = await response.json();
-      return data.translatedText;
-      */
+      
+      if (data.data && data.data.translations && data.data.translations.length > 0) {
+        const translatedText = data.data.translations[0].translatedText;
+        
+        // Save to cache
+        if (!translationCache[language]) {
+          translationCache[language] = {};
+        }
+        translationCache[language][text] = translatedText;
+        
+        return translatedText;
+      }
+      
+      return text; // Fallback to original
     } catch (error) {
       console.error('Translation error:', error);
       return text; // Return original text if translation fails

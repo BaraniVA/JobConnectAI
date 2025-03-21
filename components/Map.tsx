@@ -4,7 +4,7 @@ import { WebView } from 'react-native-webview';
 import Constants from 'expo-constants';
 
 // Web map component using Google Maps iframe
-const WebMap = ({ coordinates, title, style }) => {
+const WebMap = ({ coordinates, title, style }: MapProps) => {
   const apiKey = Constants.expoConfig?.extra?.GOOGLE_MAPS_API_KEY || '';
   const mapUrl = `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${coordinates.latitude},${coordinates.longitude}&zoom=15`;
 
@@ -32,23 +32,21 @@ const WebMap = ({ coordinates, title, style }) => {
 };
 
 // Lazy load react-native-maps for native platforms
-const NativeMap = Platform.select({
-  native: () => {
-    const { default: MapView, Marker } = require('react-native-maps');
-    return ({ coordinates, title, style }) => (
-      <MapView
-        style={[styles.map, style]}
-        initialRegion={{
-          ...coordinates,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}>
-        <Marker coordinate={coordinates} title={title} />
-      </MapView>
-    );
-  },
-  default: () => null,
-})();
+let NativeMap: React.FC<MapProps> | null = null;
+if (Platform.OS !== 'web') {
+  const { default: MapView, Marker } = require('react-native-maps');
+  NativeMap = ({ coordinates, title, style }: MapProps) => (
+    <MapView
+      style={[styles.map, style]}
+      initialRegion={{
+        ...coordinates,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      }}>
+      <Marker coordinate={coordinates} title={title} />
+    </MapView>
+  );
+}
 
 export interface MapProps {
   coordinates: {
@@ -70,7 +68,11 @@ export default function Map({ coordinates, title, style }: MapProps) {
   }
 
   // Use NativeMap for native platforms
-  return <NativeMap coordinates={coordinates} title={title} style={style} />;
+  if (NativeMap) {
+    return <NativeMap coordinates={coordinates} title={title} style={style} />;
+  }
+
+  return null;
 }
 
 const styles = StyleSheet.create({
