@@ -12,6 +12,7 @@ JobConnect AI is a multilingual job search platform focused on worker safety. In
   - Language management via a custom `LanguageContext`.
   - Dynamic text translation using the `Translate` component.
   - Seamless switch between languages without needing to restart the app.
+    
  <img src="https://github.com/user-attachments/assets/9ba8582e-8d5c-4878-a55c-bc7a1a7e1fd0" width="400" height="800">
  
 ### AI-Powered Job Search
@@ -22,6 +23,7 @@ JobConnect AI is a multilingual job search platform focused on worker safety. In
 - **Query Enhancement**:
   - Integrates natural language processing via Google Gemini AI for refining search queries.
   - Provides improved matching of job listings based on user input.
+    
  <img src="https://github.com/user-attachments/assets/ff1c6e4c-4359-4dc3-8993-a20f2f248101" width="400" height="800">
 
 ### Job Listings & Safety Analysis
@@ -35,7 +37,9 @@ JobConnect AI is a multilingual job search platform focused on worker safety. In
   - Comprehensive description, pay, and location information.
   - Options for text-to-speech job descriptions.
   - Safety tips and "Know Your Rights" sections integrated into job details.
+    
   <img src="https://github.com/user-attachments/assets/3260b7d0-b768-4b7d-a606-117fc86e5972" width="400" height="800">
+  
   <img src="https://github.com/user-attachments/assets/354b2f9e-db3b-45bb-867c-e0c9f0517521" width="400" height="800">  
 
 ### Worker Protection & Education
@@ -45,7 +49,9 @@ JobConnect AI is a multilingual job search platform focused on worker safety. In
 - **Reporting & Sharing**:
   - Ability for users to report unsafe job postings.
   - Share job details via multiple channels for increased transparency.
+    
   <img src="https://github.com/user-attachments/assets/b43d2b69-9edb-4b41-8013-c77bae624b32" width="400" height="800">
+  
   <img src="https://github.com/user-attachments/assets/dd38c6b0-7b1f-4d8b-9f5d-5e18acd3d6c2" width="400" height="800">  
 
 ### Location and Mapping Services
