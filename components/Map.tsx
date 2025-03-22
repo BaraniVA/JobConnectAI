@@ -3,10 +3,10 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Constants from 'expo-constants';
 
-// Import your secure web map component
-let WebMapSecure: React.FC<MapProps> | null = null;
+// Import your simple web map component
+let WebMapSimple: React.FC<MapProps> | null = null;
 if (Platform.OS === 'web') {
-  WebMapSecure = require('./WebMapSecure').default;
+  WebMapSimple = require('./WebMapSimple').default;
 }
 
 // WebView fallback for non-web platforms (if needed)
@@ -50,9 +50,9 @@ export interface MapProps {
 }
 
 export default function Map({ coordinates, title, style }: MapProps) {
-  // Use WebMapSecure for web platform
-  if (Platform.OS === 'web' && WebMapSecure) {
-    return <WebMapSecure coordinates={coordinates} title={title} style={style} />;
+  // Use WebMapSimple for web platform
+  if (Platform.OS === 'web' && WebMapSimple) {
+    return <WebMapSimple coordinates={coordinates} title={title} style={style} />;
   }
 
   // Use NativeMap for native platforms
