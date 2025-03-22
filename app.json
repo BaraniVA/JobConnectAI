@@ -8,6 +8,7 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "projectId": "db71cfcf-b01e-4f7c-83ee-883d3fc94ca3",
     "ios": {
       "supportsTablet": true
     },
