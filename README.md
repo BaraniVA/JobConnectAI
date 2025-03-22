@@ -12,7 +12,7 @@ JobConnect AI is a multilingual job search platform focused on worker safety. In
   - Language management via a custom `LanguageContext`.
   - Dynamic text translation using the `Translate` component.
   - Seamless switch between languages without needing to restart the app.
- <img src="https://github.com/user-attachments/assets/9ba8582e-8d5c-4878-a55c-bc7a1a7e1fd0" alt="WhatsApp Image 2025-03-22 at 16 46 56_a75f8959" width="300" height="200">
+ <img src="https://github.com/user-attachments/assets/9ba8582e-8d5c-4878-a55c-bc7a1a7e1fd0" alt="WhatsApp Image 2025-03-22 at 16 46 56_a75f8959" width="800" height="1200">
  
 ### AI-Powered Job Search
 - **Voice Search**:
