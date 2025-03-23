@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "projectId": "db71cfcf-b01e-4f7c-83ee-883d3fc94ca3",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app uses the microphone for voice input of job listings",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition for voice-based job creation"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -18,7 +22,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "Allow JobConnect AI to access your microphone",
+          "speechRecognitionPermission": "Allow JobConnect AI to access speech recognition"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -27,6 +38,11 @@
       "router": {
         "origin": false
       }
+    },
+    "android": {
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     }
   }
 }

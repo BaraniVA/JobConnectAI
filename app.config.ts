@@ -47,7 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
     GOOGLE_CLOUD_API_KEY: process.env.GOOGLE_CLOUD_API_KEY,
-    TRANSLATE_API_KEY: process.env.TRANSLATE_API_KEY,
+    GOOGLE_TRANSLATE_API_KEY: process.env.GOOGLE_TRANSLATE_API_KEY,
   },
   plugins: ['expo-router']
 });

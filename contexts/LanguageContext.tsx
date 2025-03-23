@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -16,6 +17,7 @@ interface LanguageContextType {
   language: Language;
   setLanguage: (language: Language) => void;
   translate: (text: string) => Promise<string>;
+  isLanguageLoaded: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -41,6 +43,7 @@ const translationCache: Record<string, Record<string, string>> = {
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('english');
+  const [isLanguageLoaded, setIsLanguageLoaded] = useState(false);
 
   useEffect(() => {
     const loadSavedLanguage = async () => {
@@ -49,8 +52,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         if (savedLanguage && isValidLanguage(savedLanguage)) {
           setLanguage(savedLanguage as Language);
         }
+        setIsLanguageLoaded(true); // Mark language as loaded
       } catch (error) {
         console.error('Failed to load language preference:', error);
+        setIsLanguageLoaded(true); // Still mark as loaded even if there's an error
       }
     };
     
@@ -86,6 +91,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
           'JobConnect AI': 'JobConnect AI தமிழில்',
           'Find a Job': 'வேலை தேட',
           'Browse Jobs': 'வேலைகளை பார்வையிட',
+          'Employer Portal': 'நடத்தர் தளம்',
           'Welcome to JobConnect AI. Press Find a Job to search or Browse Jobs to see all jobs': 
             'Job connect AI க்கு உங்களை வரவேற்கிறோம். வேலை தேடுவதற்கு வேலை தேட என்பதை அழுத்தவும் அல்லது என்னென்ன வேலைகள் உள்ளது என்பதை அறிய வேலைகளை பார்வையிட என்பதை அழுத்தவும்'
         },
@@ -122,17 +128,17 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       }
       
       // Get API key from Expo Constants (add this to app.json or app.config.js)
-      const TRANSLATE_API_KEY = Constants.expoConfig?.extra?.translateApiKey;
+      const apiKey = Constants.expoConfig?.extra?.GOOGLE_TRANSLATE_API_KEY;
       
-      if (!TRANSLATE_API_KEY) {
-        console.warn('Translation API key not found');
-        return text;
+      if (!apiKey) {
+        console.error('Google Translate API key not found in environment variables.');
+        return text; // Fallback to original
       }
       
       // Call translation API
       const targetLang = languageCodes[language];
       const response = await fetch(
-        `https://translation.googleapis.com/language/translate/v2?key=${TRANSLATE_API_KEY}`,
+        `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -169,8 +175,17 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, translate }}>
-      {children}
+    <LanguageContext.Provider value={{ 
+      language, 
+      setLanguage, 
+      translate,
+      isLanguageLoaded // Add this to the context
+    }}>
+    {isLanguageLoaded ? children : (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    )}
     </LanguageContext.Provider>
   );
 };
