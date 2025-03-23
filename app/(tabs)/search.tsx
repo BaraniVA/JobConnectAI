@@ -329,9 +329,27 @@ export default function SearchScreen() {
         <Text style={styles.jobLocation}>{item.location || "Location"}</Text>
         <Text style={styles.jobPay}>{item.salary || item.pay || "$15-20/hr"}</Text>
         {item.safetyScore && (
-          <View style={[styles.safetyBadge, safetyBadgeStyle]}>
-            <Shield size={16} color={safetyColor} />
-            <Text style={safetyTextStyle}>Safety Score: {item.safetyScore}</Text>
+          <View style={[
+            styles.safetyBadge, 
+            item.safetyScore === 'Low Risk' ? styles.safetyBadgeLow : 
+            item.safetyScore === 'Medium Risk' ? styles.safetyBadgeMedium : 
+            styles.safetyBadgeHigh
+          ]}>
+            <Shield 
+              size={16} 
+              color={
+                item.safetyScore === 'Low Risk' ? '#4CAF50' : 
+                item.safetyScore === 'Medium Risk' ? '#FF9800' : 
+                '#F44336'
+              } 
+            />
+            <Text style={
+              item.safetyScore === 'Low Risk' ? styles.safetyTextLow : 
+              item.safetyScore === 'Medium Risk' ? styles.safetyTextMedium : 
+              styles.safetyTextHigh
+            }>
+              {item.safetyScore}
+            </Text>
           </View>
         )}
       </TouchableOpacity>

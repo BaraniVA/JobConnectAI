@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Megaphone, List as ListIcon, CircleHelp as HelpCircle, Shield } from 'lucide-react-native';
+import { Megaphone, List as ListIcon, CircleHelp as HelpCircle, Briefcase } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { useEffect, useState, useRef } from 'react';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
@@ -86,6 +86,12 @@ export default function HomeScreen() {
           onPress={() => router.push('/jobs')}>
           <ListIcon size={24} color="#FFFFFF" />
           <Translate text="Browse Jobs" style={styles.buttonText} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.employerButton]}
+          onPress={() => router.push('../employer')}>
+          <Briefcase size={24} color="#FFFFFF" />
+          <Translate text="Employer Portal" style={styles.buttonText} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.helpButton}
@@ -203,5 +209,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  employerButton: {
+    backgroundColor: '#4CAF50',
   },
 });

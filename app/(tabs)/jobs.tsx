@@ -45,7 +45,10 @@ export default function JobsScreen() {
       <View style={styles.jobHeader}>
         <Text style={styles.jobTitle}>{item.title}</Text>
         {item.verified && (
-          <Shield size={20} color="#34C759" />
+          <Shield size={20} color={
+            item.safetyScore === 'Low Risk' ? '#4CAF50' : 
+            item.safetyScore === 'Medium Risk' ? '#FF9800' : 
+            '#F44336'} />
         )}
       </View>
       <Text style={styles.jobLocation}>{item.location}</Text>
