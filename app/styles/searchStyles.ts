@@ -166,6 +166,13 @@ export const styles = StyleSheet.create({
       textAlign: 'center',
       marginBottom: 20,
     },
+    nearbyDistance: {
+      color: '#10B981', // Green for nearby
+      fontWeight: '500',
+    },
+    farDistance: {
+      color: '#6B7280', // Gray for far away
+    },
   });
 
 export default styles;
