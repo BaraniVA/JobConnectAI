@@ -8,12 +8,18 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import Translate from '../../components/Translate';
 
 // Job type definition
-interface Job {
+export interface Job {
   id: string;
   title: string;
   location: string;
   pay: string;
   verified?: boolean;
+  safetyScore?: string;
+  locationCoords?: {
+    latitude: number;
+    longitude: number;
+  };
+  distance?: number;
 }
 
 const getSpeechLanguageCode = (lang: string): string => {

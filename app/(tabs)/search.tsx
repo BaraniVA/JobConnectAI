@@ -8,6 +8,10 @@ import { useJobs } from '@/hooks/useFirestore';
 import { processSearchQuery, searchJobs } from '../../utils/geminiService';
 import { styles } from '../styles/searchStyles';
 import Constants from 'expo-constants';
+import useLocation from '../../hooks/useLocation';
+import { filterByProximity } from '../../utils/proximitySearch';
+import { MapPin } from 'lucide-react-native';
+
 const apiKey = Constants.expoConfig?.extra?.GOOGLE_CLOUD_API_KEY;
 
 export default function SearchScreen() {
@@ -21,6 +25,7 @@ export default function SearchScreen() {
   const [results, setResults] = useState<any[]>([]);
   const [voiceError, setVoiceError] = useState<string>('');
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const { location, loading: locationLoading } = useLocation();
   
   // Add countdown timer for better UX
   const [countdown, setCountdown] = useState(5);
@@ -246,8 +251,65 @@ export default function SearchScreen() {
       
       // Check if we got results
       if (searchResults && searchResults.length > 0) {
-        setResults(searchResults);
-        console.log("✅ Results set with", searchResults.length, "jobs");
+        // Apply location filtering if available
+        if (location) {
+          console.log("📍 User location available, filtering by proximity");
+          
+          // Convert the coordinates to the format expected by filterByProximity
+          const resultsWithCoords = searchResults.map(job => ({
+            ...job,
+            locationCoords: job.coordinates ? {
+              latitude: job.coordinates.latitude,
+              longitude: job.coordinates.longitude
+            } : undefined
+          }));
+          
+          // Filter jobs by proximity (50km radius)
+          const nearbyResults = filterByProximity(resultsWithCoords, location, 50);
+          console.log("📍 Found", nearbyResults.length, "nearby jobs out of", searchResults.length);
+          
+          if (nearbyResults.length > 0) {
+            // Option 1: Show only nearby results
+            // setResults(nearbyResults);
+            
+            // Option 2: Show nearby results first, then others
+            const otherResults = searchResults.filter(
+              job => !nearbyResults.some((nearbyJob: typeof job) => nearbyJob.id === job.id)
+            );
+            
+            // Add distance info to other results
+            otherResults.forEach(job => {
+              if (job.coordinates) {
+                const coords = {
+                  latitude: job.coordinates.latitude,
+                  longitude: job.coordinates.longitude
+                };
+                
+                // Type assertion for location to ensure coords exist
+                if (location && (location as { coords: { latitude: number, longitude: number } }).coords) {
+                  const userCoords = (location as { coords: { latitude: number, longitude: number } }).coords;
+                  job.distance = Math.round(
+                    getDistanceFromLatLonInKm(
+                      userCoords.latitude,
+                      userCoords.longitude,
+                      coords.latitude,
+                      coords.longitude
+                    ) * 10
+                  ) / 10;
+                }
+              }
+            });
+            
+            setResults([...nearbyResults, ...otherResults]);
+            console.log("✅ Results prioritized by distance");
+          } else {
+            setResults(searchResults);
+            console.log("ℹ️ No nearby results found, showing all matches");
+          }
+        } else {
+          setResults(searchResults);
+          console.log("ℹ️ Location not available, showing all results");
+        }
       } else {
         console.log("⚠️ No search results found");
       }
@@ -326,7 +388,17 @@ export default function SearchScreen() {
         <View style={styles.jobHeader}>
           <Text style={styles.jobTitle}>{item.title || "Job Position"}</Text>
         </View>
-        <Text style={styles.jobLocation}>{item.location || "Location"}</Text>
+        <Text style={styles.jobLocation}>
+          {item.location || "Location"}
+          {item.distance && (
+            <Text>
+              {" • "}
+              <Text style={item.distance <= 10 ? styles.nearbyDistance : styles.farDistance}>
+                {item.distance}km away
+              </Text>
+            </Text>
+          )}
+        </Text>
         <Text style={styles.jobPay}>{item.salary || item.pay || "$15-20/hr"}</Text>
         {item.safetyScore && (
           <View style={[
@@ -420,5 +492,23 @@ export default function SearchScreen() {
       </View>
     </View>
   );
+}
+
+// Import the distance calculation function directly if not using the utility directly
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg: number): number {
+  return deg * (Math.PI / 180);
 }
 

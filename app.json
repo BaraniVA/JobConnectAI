@@ -13,7 +13,9 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app uses the microphone for voice input of job listings",
-        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition for voice-based job creation"
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition for voice-based job creation",
+        "NSLocationWhenInUseUsageDescription": "JobConnect AI needs your location to find jobs near you",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "JobConnect AI needs your location to find jobs near you"
       }
     },
     "web": {
@@ -40,8 +42,11 @@
       }
     },
     "android": {
+      "package": "com.yourname.jobconnectai",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     }
   }
