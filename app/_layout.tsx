@@ -1,3 +1,4 @@
+import '../app/(root)/cryptoPolyfill';
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
