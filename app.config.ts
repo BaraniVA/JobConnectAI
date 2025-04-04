@@ -48,6 +48,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
     GOOGLE_CLOUD_API_KEY: process.env.GOOGLE_CLOUD_API_KEY,
     GOOGLE_TRANSLATE_API_KEY: process.env.GOOGLE_TRANSLATE_API_KEY,
+
+    eas: {
+      projectId: "d457079d-ad79-4553-b62d-9a4e84de2793"
+    }
   },
   plugins: ['expo-router']
 });
