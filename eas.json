@@ -11,7 +11,9 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "credentialsSource": "remote",
+        "withoutCredentials": true
       }
     },
     "production": {}
