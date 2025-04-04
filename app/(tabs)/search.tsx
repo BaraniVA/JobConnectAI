@@ -255,8 +255,35 @@ export default function SearchScreen() {
         if (location) {
           console.log("📍 User location available, filtering by proximity");
           
-          // Convert the coordinates to the format expected by filterByProximity
-          const resultsWithCoords = searchResults.map(job => ({
+          // First, add distance to ALL jobs
+          const resultsWithDistance = searchResults.map(job => {
+            const jobWithDistance = { ...job };
+            
+            if (job.coordinates) {
+              const coords = {
+                latitude: job.coordinates.latitude,
+                longitude: job.coordinates.longitude
+              };
+              
+              // Type assertion for location to ensure coords exist
+              if (location && (location as { coords: { latitude: number, longitude: number } }).coords) {
+                const userCoords = (location as { coords: { latitude: number, longitude: number } }).coords;
+                jobWithDistance.distance = Math.round(
+                  getDistanceFromLatLonInKm(
+                    userCoords.latitude,
+                    userCoords.longitude,
+                    coords.latitude,
+                    coords.longitude
+                  ) * 10
+                ) / 10;
+              }
+            }
+            
+            return jobWithDistance;
+          });
+          
+          // Then convert the coordinates for proximity filtering
+          const resultsWithCoords = resultsWithDistance.map(job => ({
             ...job,
             locationCoords: job.coordinates ? {
               latitude: job.coordinates.latitude,
@@ -269,46 +296,21 @@ export default function SearchScreen() {
           console.log("📍 Found", nearbyResults.length, "nearby jobs out of", searchResults.length);
           
           if (nearbyResults.length > 0) {
-            // Option 1: Show only nearby results
-            // setResults(nearbyResults);
-            
-            // Option 2: Show nearby results first, then others
-            const otherResults = searchResults.filter(
+            // Show nearby results first, then others (all with distance)
+            const otherResults = resultsWithDistance.filter(
               job => !nearbyResults.some((nearbyJob: typeof job) => nearbyJob.id === job.id)
             );
-            
-            // Add distance info to other results
-            otherResults.forEach(job => {
-              if (job.coordinates) {
-                const coords = {
-                  latitude: job.coordinates.latitude,
-                  longitude: job.coordinates.longitude
-                };
-                
-                // Type assertion for location to ensure coords exist
-                if (location && (location as { coords: { latitude: number, longitude: number } }).coords) {
-                  const userCoords = (location as { coords: { latitude: number, longitude: number } }).coords;
-                  job.distance = Math.round(
-                    getDistanceFromLatLonInKm(
-                      userCoords.latitude,
-                      userCoords.longitude,
-                      coords.latitude,
-                      coords.longitude
-                    ) * 10
-                  ) / 10;
-                }
-              }
-            });
             
             setResults([...nearbyResults, ...otherResults]);
             console.log("✅ Results prioritized by distance");
           } else {
-            setResults(searchResults);
+            // Still show all results with distance information
+            setResults(resultsWithDistance);
             console.log("ℹ️ No nearby results found, showing all matches");
           }
         } else {
-          setResults(searchResults);
           console.log("ℹ️ Location not available, showing all results");
+          setResults(searchResults);
         }
       } else {
         console.log("⚠️ No search results found");
